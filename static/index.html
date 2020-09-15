@@ -1,0 +1,64 @@
+<html>
+  <head>
+    <title>Websocket Ping Check</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: #f1f2f6;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      #container {
+        height: 100vh;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      #ping {
+        font-size: 4vw;
+        color: #1e90ff;
+        text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.1);
+      }
+      #ping.pinging {
+        color: #a4b0be;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <div id="ping" class="pinging">Pinging...</div>
+    </div>
+
+    <script>
+      const pingEl = document.getElementById("ping")
+
+      function openPingSocket() {
+        let startTime = 0
+        let pings = []
+        const ws = new WebSocket(`ws://${window.location.host}/`)
+
+        ws.addEventListener("message", () => {
+          const now = Date.now()
+          pings.push(now - startTime)
+          pings = pings.slice(-10)
+          const avg = pings.reduce((prev, p) => prev + p, 0) / pings.length
+          pingEl.innerHTML = `${avg.toFixed(1)}ms ping`
+          pingEl.classList.remove("pinging")
+        })
+
+        const pingInterval = setInterval(() => {
+          startTime = Date.now()
+          ws.send(startTime)
+        }, 1000)
+
+        // Attempt reopen on close
+        ws.addEventListener("close", () => {
+          clearInterval(pingInterval)
+          setTimeout(() => openPingSocket, 1000)
+        })
+      }
+      openPingSocket()
+    </script>
+  </body>
+</html>
